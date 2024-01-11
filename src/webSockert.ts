@@ -1,7 +1,11 @@
 import chokidar from 'chokidar'
 import WebSocket, { WebSocketServer } from 'ws';
 import { Server } from 'http'
-import { posix } from 'path'
+
+type Message = {
+  type: "update",
+  data: Record<string, string>
+}
 
 export class CreateWebSocketServer {
 
@@ -26,7 +30,7 @@ export class CreateWebSocketServer {
     })
   }
 
-  sendMessage(info: Record<string, string>) {
+  sendMessage(info: Message) {
     this.wss.clients.forEach(client => {
       client.send(JSON.stringify(info))
     })

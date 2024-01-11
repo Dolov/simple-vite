@@ -18,7 +18,12 @@ process.on("uncaughtException", err => {
 app.get("/", (req, res) => {
   const entry = `${process.cwd()}/index.html`
   let entryHtml = readFileSync(entry, 'utf-8')
-  registerRootRoute(entryHtml)
+  const src = getSrc(entryHtml)
+  if (src) {
+    watchFile(src)
+    registerRootRoute(src)
+  }
+
   entryHtml = entryHtml.replace(/<head>(.|[\n\r])*<\/head>/, (...args) => {
     return args[0].replace("</head>", `<script type="module" src="/@vite/client"></script></head>`)
   })
@@ -47,10 +52,10 @@ server.listen(port, () => {
   console.log(`Example app listening on http://localhost:${port}`)
 })
 
-const registerRootRoute = (html: string) => {
-  const src = getSrc(html)
-  if (!src) return
-  app.get(`/${src}/*`, async (req, res) => {
+const wss = new CreateWebSocketServer(server)
+
+const registerRootRoute = (src: string) => {
+  app.get(`${src}/*`, async (req, res) => {
     const type = getExt(req.path)
     const filePath = `${process.cwd()}${req.path}`
     const code = readFileSync(filePath, 'utf-8')
@@ -83,7 +88,14 @@ const registerRootRoute = (html: string) => {
   })
 }
 
-
-const wss = new CreateWebSocketServer(server)
-
-// watchSourceChange()
+const watchFile = (src: string) => {
+  const sourcePath = `${process.cwd()}${src}`
+  watchSourceChange(sourcePath).on('change', file => {
+    wss.sendMessage({
+      type: "update",
+      data: {
+        file,
+      }
+    })
+  })
+}

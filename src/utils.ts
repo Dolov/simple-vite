@@ -13,5 +13,7 @@ export const getSrc = (html: string) => {
   const srcRes = scriptRes[0].match(/src=("|')(.*)("|')/)
   if (!srcRes) return
   const path = srcRes[2].startsWith("/") ? srcRes[2]: `/${srcRes[2]}`
-  return path.split("/")[1]
+  const src = path.split("/")[1]
+  if (src.includes(".")) return "/"
+  return `/${src}`
 }
